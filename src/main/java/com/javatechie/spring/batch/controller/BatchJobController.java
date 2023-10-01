@@ -1,8 +1,7 @@
 package com.javatechie.spring.batch.controller;
 
-import com.javatechie.spring.batch.entity.Customer;
-import com.javatechie.spring.batch.repository.CustomerRepository;
-import org.apache.tomcat.util.http.fileupload.IOUtils;
+import com.javatechie.spring.batch.entity.CarPark;
+import com.javatechie.spring.batch.repository.CarParkRepository;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
@@ -10,7 +9,6 @@ import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteExcep
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,11 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -36,11 +30,11 @@ public class BatchJobController {
     private Job job;
 
     @Autowired
-    private CustomerRepository repository;
+    private CarParkRepository repository;
     @Autowired
     private JobRepository jobRepository;
 
-    private final String TEMP_STORAGE = "/Users/javatechie/Desktop/batch-files/";
+    private final String TEMP_STORAGE = "/Users/user/Documents/tempFolder/";
 
     @PostMapping(path = "/importData")
     public void startBatch(@RequestParam("file") MultipartFile multipartFile) {
@@ -59,7 +53,7 @@ public class BatchJobController {
                     .addString("fullPathFileName", TEMP_STORAGE + originalFileName)
                     .addLong("startAt", System.currentTimeMillis()).toJobParameters();
 
-            JobExecution execution = jobLauncher.run(job, jobParameters);
+            jobLauncher.run(job, jobParameters);
 
 //            if(execution.getExitStatus().getExitCode().equals(ExitStatus.COMPLETED)){
 //                //delete the file from the TEMP_STORAGE
@@ -73,7 +67,7 @@ public class BatchJobController {
     }
 
     @GetMapping("/customers")
-    public List<Customer> getAll() {
+    public List<CarPark> getAll() {
         return repository.findAll();
     }
 }

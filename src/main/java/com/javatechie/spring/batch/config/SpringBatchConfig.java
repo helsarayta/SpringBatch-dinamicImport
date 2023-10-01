@@ -1,11 +1,9 @@
 package com.javatechie.spring.batch.config;
 
-import com.javatechie.spring.batch.entity.Customer;
+import com.javatechie.spring.batch.entity.CarPark;
 import com.javatechie.spring.batch.listener.StepSkipListener;
-import com.javatechie.spring.batch.repository.CustomerRepository;
-import lombok.AllArgsConstructor;
+import com.javatechie.spring.batch.repository.CarParkRepository;
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.SkipListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -23,8 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
@@ -41,15 +37,15 @@ public class SpringBatchConfig {
     @Autowired
     private StepBuilderFactory stepBuilderFactory;
     @Autowired
-    private CustomerRepository customerRepository;
+    private CarParkRepository carParkRepository;
     @Autowired
-    private CustomerItemWriter customerItemWriter;
+    private CarParkItemWriter carParkItemWriter;
 
 
     @Bean
     @StepScope
-    public FlatFileItemReader<Customer> itemReader(@Value("#{jobParameters[fullPathFileName]}") String pathToFIle) {
-        FlatFileItemReader<Customer> flatFileItemReader = new FlatFileItemReader<>();
+    public FlatFileItemReader<CarPark> itemReader(@Value("#{jobParameters[fullPathFileName]}") String pathToFIle) {
+        FlatFileItemReader<CarPark> flatFileItemReader = new FlatFileItemReader<>();
         flatFileItemReader.setResource(new FileSystemResource(new File(pathToFIle)));
         flatFileItemReader.setName("CSV-Reader");
         flatFileItemReader.setLinesToSkip(1);
@@ -57,17 +53,17 @@ public class SpringBatchConfig {
         return flatFileItemReader;
     }
 
-    private LineMapper<Customer> lineMapper() {
-        DefaultLineMapper<Customer> lineMapper = new DefaultLineMapper<>();
+    private LineMapper<CarPark> lineMapper() {
+        DefaultLineMapper<CarPark> lineMapper = new DefaultLineMapper<>();
 
         DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
         lineTokenizer.setDelimiter(",");
         lineTokenizer.setStrict(false);
-        lineTokenizer.setNames("id", "firstName", "lastName", "email", "gender", "contactNo", "country", "dob", "age");
-        //lineTokenizer.setNames("id", "firstName", "lastName", "email", "gender", "contactNo", "country", "dob");
+        lineTokenizer.setNames("carParkNo","address","xCoord","yCoord","carParkType","typeOfParkingSystem","shortTermParking","freeParking","nightParking","carParkDecks","gantryHeight","carParkBasement");
 
-        BeanWrapperFieldSetMapper<Customer> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
-        fieldSetMapper.setTargetType(Customer.class);
+
+        BeanWrapperFieldSetMapper<CarPark> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
+        fieldSetMapper.setTargetType(CarPark.class);
 
         lineMapper.setLineTokenizer(lineTokenizer);
         lineMapper.setFieldSetMapper(fieldSetMapper);
@@ -76,25 +72,25 @@ public class SpringBatchConfig {
     }
 
     @Bean
-    public CustomerProcessor processor() {
-        return new CustomerProcessor();
+    public CarParkProcessor processor() {
+        return new CarParkProcessor();
     }
 
     @Bean
-    public RepositoryItemWriter<Customer> writer() {
-        RepositoryItemWriter<Customer> writer = new RepositoryItemWriter<>();
-        writer.setRepository(customerRepository);
+    public RepositoryItemWriter<CarPark> writer() {
+        RepositoryItemWriter<CarPark> writer = new RepositoryItemWriter<>();
+        writer.setRepository(carParkRepository);
         writer.setMethodName("save");
         return writer;
     }
 
 
     @Bean
-    public Step step1(FlatFileItemReader<Customer> itemReader) {
-        return stepBuilderFactory.get("slaveStep").<Customer, Customer>chunk(10)
+    public Step step1(FlatFileItemReader<CarPark> itemReader) {
+        return stepBuilderFactory.get("slaveStep").<CarPark, CarPark>chunk(50)
                 .reader(itemReader)
                 .processor(processor())
-                .writer(customerItemWriter)
+                .writer(carParkItemWriter)
                 .faultTolerant()
                 .listener(skipListener())
                 .skipPolicy(skipPolicy())
@@ -104,8 +100,8 @@ public class SpringBatchConfig {
 
 
     @Bean
-    public Job runJob(FlatFileItemReader<Customer> itemReader) {
-        return jobBuilderFactory.get("importCustomer").flow(step1(itemReader)).end().build();
+    public Job runJob(FlatFileItemReader<CarPark> itemReader) {
+        return jobBuilderFactory.get("importCarPark").flow(step1(itemReader)).end().build();
     }
 
 
@@ -122,7 +118,7 @@ public class SpringBatchConfig {
     @Bean
     public TaskExecutor taskExecutor() {
         SimpleAsyncTaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
-        taskExecutor.setConcurrencyLimit(10);
+        taskExecutor.setConcurrencyLimit(20);
         return taskExecutor;
     }
 
